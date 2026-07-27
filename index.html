@@ -283,8 +283,8 @@ input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--teal
   </div>
 
   <div class="section" id="sec-stock">
-    <div class="page-head"><div><h1>Stock</h1><div class="sub">Produtos e quantidades</div></div><button class="btn btn-accent" onclick="openProdutoModal()">+ Novo produto</button></div>
-    <div class="card card-pad"><div class="table-wrap"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Qtd</th><th>Preço custo</th><th>Preço venda</th><th></th></tr></thead><tbody id="stock-tbody"></tbody></table></div><div id="stock-empty"></div></div>
+    <div class="page-head"><div><h1>Stock</h1><div class="sub">Armazém geral e stock do restaurante</div></div><button class="btn btn-accent" onclick="openProdutoModal()">+ Novo produto</button></div>
+    <div id="stock-content"></div>
   </div>
 
   <div class="section" id="sec-despesas">
@@ -366,12 +366,34 @@ input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--teal
     <div class="field full"><label>Nome</label><input type="text" id="pr-nome"></div>
     <div class="field"><label>Categoria</label><select id="pr-categoria"><option>Bebidas</option><option>Comidas</option><option>Petiscos</option><option>Sobremesas</option><option>Outros</option></select></div>
     <div class="field"><label>Unidade</label><input type="text" id="pr-unidade" placeholder="un / dose / kg"></div>
-    <div class="field"><label>Quantidade em stock</label><input type="number" id="pr-qtd"></div>
-    <div class="field"><label>Stock mínimo</label><input type="number" id="pr-minimo"></div>
+    <div class="field"><label>Stock no Armazém</label><input type="number" id="pr-qtd-armazem"></div>
+    <div class="field"><label>Stock no Restaurante</label><input type="number" id="pr-qtd-restaurante"></div>
+    <div class="field"><label>Stock mínimo (restaurante)</label><input type="number" id="pr-minimo"></div>
     <div class="field"><label>Preço de custo (MT)</label><input type="number" id="pr-custo"></div>
     <div class="field"><label>Preço de venda (MT)</label><input type="number" id="pr-venda"></div>
   </div>
+  <p class="hint">Estes valores podem ser corrigidos aqui a qualquer momento pelo administrador. Para o dia a dia, use os botões "+ Entrada" e "Abastecer restaurante" na aba Armazém.</p>
   <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-produto')">Cancelar</button><button class="btn btn-accent" onclick="saveProduto()">Guardar</button></div>
+</div></div>
+
+<div class="modal-overlay" id="modal-entrada-armazem"><div class="modal-box">
+  <h3>Entrada no armazém</h3>
+  <input type="hidden" id="ea-produto-id">
+  <p class="hint" style="margin-top:0;"><b id="ea-produto-nome"></b></p>
+  <div class="form-grid">
+    <div class="field full"><label>Quantidade recebida</label><input type="number" id="ea-qtd" placeholder="Ex: 50"></div>
+  </div>
+  <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-entrada-armazem')">Cancelar</button><button class="btn btn-accent" onclick="confirmarEntradaArmazem()">Registar entrada</button></div>
+</div></div>
+
+<div class="modal-overlay" id="modal-abastecer"><div class="modal-box">
+  <h3>Abastecer restaurante</h3>
+  <input type="hidden" id="ab-produto-id">
+  <p class="hint" style="margin-top:0;" id="ab-produto-nome"></p>
+  <div class="form-grid">
+    <div class="field full"><label>Quantidade a transferir para o restaurante</label><input type="number" id="ab-qtd" placeholder="Ex: 10"></div>
+  </div>
+  <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-abastecer')">Cancelar</button><button class="btn btn-accent" onclick="confirmarAbastecer()">Transferir</button></div>
 </div></div>
 
 <div class="modal-overlay" id="modal-despesa"><div class="modal-box">
@@ -419,13 +441,15 @@ input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--teal
 </div></div>
 
 <div class="modal-overlay" id="modal-mesa-pagamento"><div class="modal-box">
-  <h3>Cobrar pedido</h3>
+  <h3>Registar pagamento</h3>
   <div id="mp-resumo" style="background:var(--surface-alt); border-radius:8px; padding:12px; font-size:13px; margin-bottom:12px;"></div>
   <div class="form-grid">
+    <div class="field full"><label>Valor a pagar agora (MT)</label><input type="number" step="0.01" id="mp-valor"></div>
     <div class="field full"><label>Forma de pagamento</label><select id="mp-metodo"></select></div>
     <div class="field full"><label>Nome do cliente para fatura (opcional)</label><input type="text" id="mp-cliente-nome" placeholder="Deixe em branco para usar o nome da mesa"></div>
     <div class="field full"><label>NUIT do cliente (opcional)</label><input type="text" id="mp-cliente-nuit" placeholder="Só se o cliente pedir fatura com NUIT"></div>
   </div>
+  <p class="hint">Se o valor for menor que o saldo pendente, a mesa continua aberta e é emitido apenas um recibo desta parcela. Quando o valor pago atingir o total, a mesa fecha automaticamente e é emitida a Fatura final.</p>
   <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-mesa-pagamento')">Cancelar</button><button class="btn btn-accent" onclick="confirmarPagamentoMesa()">Confirmar pagamento</button></div>
 </div></div>
 
@@ -456,6 +480,7 @@ input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--teal
     <div class="field full"><label>Nome completo</label><input type="text" id="fn-nome"></div>
     <div class="field full"><label>Cargo</label><input type="text" id="fn-cargo"></div>
     <div class="field"><label>Salário base (MT)</label><input type="number" id="fn-salario"></div>
+    <div class="field"><label>Adiantamento pendente (MT)</label><input type="number" id="fn-adiantamento"></div>
     <div class="field"><label>Data de admissão</label><input type="date" id="fn-admissao"></div>
   </div>
   <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-funcionario')">Cancelar</button><button class="btn btn-accent" onclick="saveFuncionario()">Guardar</button></div>
@@ -492,13 +517,13 @@ const CATEGORIAS_PRODUTO = ["Bebidas","Comidas","Petiscos","Sobremesas","Outros"
 const METODOS_PAGAMENTO = ["Dinheiro","Transferência Bancária","POS","M-Pesa","E-Mola"];
 
 const SEED_PRODUCTS = [
-  { id: genId(), nome:"2M Cerveja 330ml", categoria:"Bebidas", unidade:"un", qtd:120, minimo:24, precoCusto:45, precoVenda:80 },
-  { id: genId(), nome:"Água Mineral 500ml", categoria:"Bebidas", unidade:"un", qtd:80, minimo:20, precoCusto:20, precoVenda:50 },
-  { id: genId(), nome:"Refrigerante Lata", categoria:"Bebidas", unidade:"un", qtd:60, minimo:20, precoCusto:30, precoVenda:60 },
-  { id: genId(), nome:"Frango Grelhado", categoria:"Comidas", unidade:"dose", qtd:30, minimo:10, precoCusto:180, precoVenda:350 },
-  { id: genId(), nome:"Caril de Camarão", categoria:"Comidas", unidade:"dose", qtd:20, minimo:8, precoCusto:250, precoVenda:450 },
-  { id: genId(), nome:"Espetada de Carne", categoria:"Petiscos", unidade:"dose", qtd:25, minimo:10, precoCusto:120, precoVenda:220 },
-  { id: genId(), nome:"Batata Frita", categoria:"Petiscos", unidade:"dose", qtd:40, minimo:10, precoCusto:60, precoVenda:150 },
+  { id: genId(), nome:"2M Cerveja 330ml", categoria:"Bebidas", unidade:"un", qtdArmazem:0, qtdRestaurante:120, minimo:24, precoCusto:45, precoVenda:80 },
+  { id: genId(), nome:"Água Mineral 500ml", categoria:"Bebidas", unidade:"un", qtdArmazem:0, qtdRestaurante:80, minimo:20, precoCusto:20, precoVenda:50 },
+  { id: genId(), nome:"Refrigerante Lata", categoria:"Bebidas", unidade:"un", qtdArmazem:0, qtdRestaurante:60, minimo:20, precoCusto:30, precoVenda:60 },
+  { id: genId(), nome:"Frango Grelhado", categoria:"Comidas", unidade:"dose", qtdArmazem:0, qtdRestaurante:30, minimo:10, precoCusto:180, precoVenda:350 },
+  { id: genId(), nome:"Caril de Camarão", categoria:"Comidas", unidade:"dose", qtdArmazem:0, qtdRestaurante:20, minimo:8, precoCusto:250, precoVenda:450 },
+  { id: genId(), nome:"Espetada de Carne", categoria:"Petiscos", unidade:"dose", qtdArmazem:0, qtdRestaurante:25, minimo:10, precoCusto:120, precoVenda:220 },
+  { id: genId(), nome:"Batata Frita", categoria:"Petiscos", unidade:"dose", qtdArmazem:0, qtdRestaurante:40, minimo:10, precoCusto:60, precoVenda:150 },
 ];
 const SEED_EMPLOYEES = [
   { id: genId(), nome:"Carlos Muianga", cargo:"Cozinheiro", salarioBase:12000, dataAdmissao:"2023-02-01" },
@@ -632,6 +657,13 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 function monthKey(iso) { return (iso || "").slice(0, 7); }
 function nowTime() { return new Date().toTimeString().slice(0, 5); }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+// Devolve a parcela em Dinheiro de uma venda. Vendas normais (um único método) usam s.metodo;
+// vendas resultantes de pagamentos parciais de mesas (que podem ter métodos diferentes por parcela)
+// trazem um detalhe em s.pagamentos e este cálculo soma só as parcelas pagas em Dinheiro.
+function valorDinheiroDaVenda(s) {
+  if (s.pagamentos && s.pagamentos.length) return s.pagamentos.filter((p) => p.metodo === "Dinheiro").reduce((a, p) => a + p.valor, 0);
+  return s.metodo === "Dinheiro" ? s.total : 0;
+}
 function diasUteisNoMes(ano, mes) {
   const d = new Date(ano, mes - 1, 1);
   let count = 0;
@@ -755,8 +787,8 @@ function renderDashboard() {
   document.getElementById("dash-date").textContent = new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "long" });
   const { products, sales, expenses, cashSessions } = DB;
   const openSession = cashSessions.find((s) => s.status === "aberto");
-  const stockValue = products.reduce((a, p) => a + p.qtd * p.precoCusto, 0);
-  const lowStock = products.filter((p) => p.qtd <= p.minimo);
+  const stockValue = products.reduce((a, p) => a + (p.qtdArmazem + p.qtdRestaurante) * p.precoCusto, 0);
+  const lowStock = products.filter((p) => p.qtdRestaurante <= p.minimo);
   const thisMonth = monthKey(todayISO());
   const despesasMes = expenses.filter((e) => monthKey(e.data) === thisMonth).reduce((a, e) => a + e.valor, 0);
   const vendasHoje = sales.filter((s) => s.data === todayISO()).reduce((a, s) => a + s.total, 0);
@@ -764,7 +796,7 @@ function renderDashboard() {
 
   let saldoCaixa = null;
   if (openSession) {
-    const entradas = sales.filter((s) => s.sessionId === openSession.id && s.metodo === "Dinheiro").reduce((a, s) => a + s.total, 0);
+    const entradas = sales.filter((s) => s.sessionId === openSession.id).reduce((a, s) => a + valorDinheiroDaVenda(s), 0);
     const saidas = expenses.filter((e) => e.sessionId === openSession.id).reduce((a, e) => a + e.valor, 0);
     saldoCaixa = openSession.fundoInicial + entradas - saidas;
   }
@@ -794,7 +826,7 @@ function renderDashboard() {
     </div>
     <div class="card card-pad" style="margin-top:16px;">
       <h3 style="font-family:var(--serif); margin-top:0;">&#9888; Stock baixo</h3>
-      ${lowStock.length === 0 ? '<p class="hint">Todos os produtos estão acima do stock mínimo.</p>' : `<div class="form-grid">${lowStock.map((p) => `<div style="display:flex; justify-content:space-between; align-items:center; background:var(--danger-bg); border-radius:8px; padding:9px 12px;"><span>${esc(p.nome)}</span><span class="badge b-danger">${p.qtd} ${esc(p.unidade)} (mín. ${p.minimo})</span></div>`).join("")}</div>`}
+      ${lowStock.length === 0 ? '<p class="hint">Todos os produtos estão acima do stock mínimo.</p>' : `<div class="form-grid">${lowStock.map((p) => `<div style="display:flex; justify-content:space-between; align-items:center; background:var(--danger-bg); border-radius:8px; padding:9px 12px;"><span>${esc(p.nome)}</span><span class="badge b-danger">${p.qtdRestaurante} ${esc(p.unidade)} no restaurante (mín. ${p.minimo}) · ${p.qtdArmazem} no armazém</span></div>`).join("")}</div>`}
     </div>`;
 }
 
@@ -816,8 +848,8 @@ function renderCaixa() {
   }
   const vendasSessao = DB.sales.filter((s) => s.sessionId === openSession.id);
   const despesasSessao = DB.expenses.filter((e) => e.sessionId === openSession.id);
-  const entradasNumerario = vendasSessao.filter((s) => s.metodo === "Dinheiro").reduce((a, s) => a + s.total, 0);
-  const entradasOutros = vendasSessao.filter((s) => s.metodo !== "Dinheiro").reduce((a, s) => a + s.total, 0);
+  const entradasNumerario = vendasSessao.reduce((a, s) => a + valorDinheiroDaVenda(s), 0);
+  const entradasOutros = vendasSessao.reduce((a, s) => a + s.total, 0) - entradasNumerario;
   const saidasCaixa = despesasSessao.reduce((a, e) => a + e.valor, 0);
   const saldoEsperado = openSession.fundoInicial + entradasNumerario - saidasCaixa;
 
@@ -859,7 +891,7 @@ function openFecharCaixaModal() {
   const openSession = getOpenSession(); if (!openSession) return;
   const vendasSessao = DB.sales.filter((s) => s.sessionId === openSession.id);
   const despesasSessao = DB.expenses.filter((e) => e.sessionId === openSession.id);
-  const entradasNumerario = vendasSessao.filter((s) => s.metodo === "Dinheiro").reduce((a, s) => a + s.total, 0);
+  const entradasNumerario = vendasSessao.reduce((a, s) => a + valorDinheiroDaVenda(s), 0);
   const saidasCaixa = despesasSessao.reduce((a, e) => a + e.valor, 0);
   const saldoEsperado = openSession.fundoInicial + entradasNumerario - saidasCaixa;
   document.getElementById("fc-resumo").innerHTML = `
@@ -885,8 +917,8 @@ function confirmFecharCaixa() {
   const openSession = getOpenSession(); if (!openSession) return;
   const vendasSessao = DB.sales.filter((s) => s.sessionId === openSession.id);
   const despesasSessao = DB.expenses.filter((e) => e.sessionId === openSession.id);
-  const entradasNumerario = vendasSessao.filter((s) => s.metodo === "Dinheiro").reduce((a, s) => a + s.total, 0);
-  const entradasOutros = vendasSessao.filter((s) => s.metodo !== "Dinheiro").reduce((a, s) => a + s.total, 0);
+  const entradasNumerario = vendasSessao.reduce((a, s) => a + valorDinheiroDaVenda(s), 0);
+  const entradasOutros = vendasSessao.reduce((a, s) => a + s.total, 0) - entradasNumerario;
   const saidasCaixa = despesasSessao.reduce((a, e) => a + e.valor, 0);
   const saldoEsperado = openSession.fundoInicial + entradasNumerario - saidasCaixa;
   const contagem = parseFloat(document.getElementById("fc-contagem").value) || 0;
@@ -1005,9 +1037,9 @@ function renderFatGrid() {
   const term = faturamentoSearch.toLowerCase();
   const filtered = DB.products.filter((p) => p.nome.toLowerCase().includes(term));
   grid.innerHTML = filtered.map((p) => `
-    <button class="product-tile" ${p.qtd <= 0 ? "disabled" : ""} onclick="addToCart('${p.id}')">
+    <button class="product-tile" ${p.qtdRestaurante <= 0 ? "disabled" : ""} onclick="addToCart('${p.id}')">
       <div style="font-weight:600; font-size:13px;">${esc(p.nome)}</div>
-      <div class="hint" style="margin:2px 0;">${esc(p.categoria)} · stock ${p.qtd}</div>
+      <div class="hint" style="margin:2px 0;">${esc(p.categoria)} · stock ${p.qtdRestaurante}</div>
       <div style="color:var(--teal); font-weight:700; font-size:13px;">${fmt(p.precoVenda)}</div>
     </button>`).join("") || '<div class="empty-state">Nenhum produto encontrado.</div>';
 }
@@ -1065,7 +1097,7 @@ function saveEditarVenda() {
 function deleteVenda(id) {
   const s = DB.sales.find((x) => x.id === id); if (!s) return;
   askConfirm("Apagar esta venda? O stock dos produtos vendidos será devolvido automaticamente.", () => {
-    s.itens.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtd += item.qtd; });
+    s.itens.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtdRestaurante += item.qtd; });
     DB.sales = DB.sales.filter((x) => x.id !== id);
     saveCollection("sales");
     saveCollection("products");
@@ -1079,7 +1111,7 @@ function finalizarVenda() {
   const total = cart.reduce((a, i) => a + i.preco * i.qtd, 0);
   const venda = { id: genId(), sessionId: openSession.id, data: todayISO(), hora: nowTime(), mesa: document.getElementById("fat-mesa").value, metodo: document.getElementById("fat-metodo").value, itens: cart, total, operador: currentUser.nome };
   DB.sales.push(venda);
-  cart.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtd = Math.max(0, p.qtd - item.qtd); });
+  cart.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtdRestaurante = Math.max(0, p.qtdRestaurante - item.qtd); });
   saveCollection("sales");
   saveCollection("products");
   cart = [];
@@ -1150,6 +1182,9 @@ let mesaActiveOrderId = null;
 let mesaSearch = "";
 function getOpenTableOrders() { return DB.tableOrders.filter((o) => o.status === "aberta"); }
 function getActiveMesaOrder() { return DB.tableOrders.find((o) => o.id === mesaActiveOrderId); }
+function calcTotalPedido(order) { return order.itens.reduce((a, i) => a + i.preco * i.qtd, 0); }
+function calcTotalPago(order) { return (order.pagamentos || []).reduce((a, p) => a + p.valor, 0); }
+function calcSaldoPendente(order) { return Math.max(0, calcTotalPedido(order) - calcTotalPago(order)); }
 
 function renderMesas() {
   const el = document.getElementById("mesas-content"); if (!el) return;
@@ -1167,17 +1202,20 @@ function renderMesasList(el) {
     ${abertas.length === 0 ? '<div class="card card-pad"><div class="empty-state"><div class="ic">&#127869;</div>Nenhuma mesa ou pedido em aberto.</div></div>' : `
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:12px;">
       ${abertas.map((o) => {
-        const total = o.itens.reduce((a, i) => a + i.preco * i.qtd, 0);
+        const total = calcTotalPedido(o);
+        const pago = calcTotalPago(o);
+        const saldo = calcSaldoPendente(o);
         const qtdItens = o.itens.reduce((a, i) => a + i.qtd, 0);
         return `<div class="card card-pad">
           <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
             <div><b style="font-family:var(--serif); font-size:15px;">${esc(o.nome)}</b><div class="hint" style="margin:2px 0 0;">${qtdItens} item(ns) · aberto às ${new Date(o.abertaEm).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}</div></div>
             <span class="badge b-warn">${fmt(total)}</span>
           </div>
+          ${pago > 0 ? `<div class="hint" style="margin:6px 0 0;">Já pago: <b style="color:var(--ink);">${fmt(pago)}</b> · Saldo: <b style="color:var(--danger);">${fmt(saldo)}</b></div>` : ""}
           <div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">
             <button class="btn btn-ghost" style="flex:1;" onclick="abrirMesaDetail('${o.id}')">Abrir</button>
             <button class="btn btn-ghost" style="flex:1;" onclick="imprimirProformaMesa('${o.id}')" ${o.itens.length === 0 ? "disabled" : ""}>Proforma</button>
-            <button class="btn btn-accent" style="flex:1;" onclick="openPagamentoMesaModal('${o.id}')" ${o.itens.length === 0 ? "disabled" : ""}>Cobrar</button>
+            <button class="btn btn-accent" style="flex:1;" onclick="openPagamentoMesaModal('${o.id}')" ${o.itens.length === 0 ? "disabled" : ""}>${pago > 0 ? "Pagar saldo" : "Cobrar"}</button>
             ${admin ? `<button class="icon-btn" title="Cancelar pedido" onclick="cancelarMesaPedido('${o.id}')">&#128465;</button>` : ""}
           </div>
         </div>`;
@@ -1198,6 +1236,7 @@ function renderMesasList(el) {
 }
 function cancelarMesaPedido(orderId) {
   const order = DB.tableOrders.find((o) => o.id === orderId); if (!order) return;
+  if ((order.pagamentos || []).length > 0) { showToast("Este pedido já tem pagamentos parciais registados e não pode ser cancelado — feche-o normalmente."); return; }
   askConfirm(`Cancelar o pedido "${order.nome}"? Esta ação não pode ser desfeita.`, () => {
     DB.tableOrders = DB.tableOrders.filter((o) => o.id !== orderId);
     saveCollection("tableOrders");
@@ -1211,7 +1250,7 @@ function deleteMesaPedidoPago(orderId) {
   askConfirm(`Apagar o pedido pago de "${order.nome}"? A venda associada será removida e o stock devolvido.`, () => {
     if (order.saleId) {
       const venda = DB.sales.find((s) => s.id === order.saleId);
-      if (venda) { venda.itens.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtd += item.qtd; }); DB.sales = DB.sales.filter((s) => s.id !== order.saleId); saveCollection("sales"); saveCollection("products"); }
+      if (venda) { venda.itens.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtdRestaurante += item.qtd; }); DB.sales = DB.sales.filter((s) => s.id !== order.saleId); saveCollection("sales"); saveCollection("products"); }
     }
     DB.tableOrders = DB.tableOrders.filter((o) => o.id !== orderId);
     saveCollection("tableOrders");
@@ -1222,6 +1261,9 @@ function deleteMesaPedidoPago(orderId) {
 function abrirMesaDetail(id) { mesaActiveOrderId = id; mesaSearch = ""; renderMesas(); }
 function fecharMesaDetail() { mesaActiveOrderId = null; renderMesas(); }
 function renderMesaDetail(el, order) {
+  const total = calcTotalPedido(order);
+  const pago = calcTotalPago(order);
+  const saldo = calcSaldoPendente(order);
   el.innerHTML = `
     <div style="margin-bottom:12px;"><button class="btn btn-ghost" onclick="fecharMesaDetail()">&larr; Voltar às mesas</button></div>
     <div class="grid2">
@@ -1232,11 +1274,16 @@ function renderMesaDetail(el, order) {
       </div>
       <div class="card card-pad">
         <h3 style="font-family:var(--serif); margin-top:0;">&#128722; Pedido</h3>
-        <div id="mesa-cart" style="max-height:280px; overflow-y:auto; margin-bottom:10px;"></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-top:1px solid var(--border); margin-top:6px;"><span class="hint" style="margin:0;">Total</span><span style="font-family:var(--serif); font-size:21px; color:var(--sidebar-bg);" id="mesa-total">${fmt(0)}</span></div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <div id="mesa-cart" style="max-height:230px; overflow-y:auto; margin-bottom:10px;"></div>
+        <div style="border-top:1px solid var(--border); margin-top:6px; padding-top:10px;">
+          <div style="display:flex; justify-content:space-between; padding:2px 0;"><span class="hint" style="margin:0;">Total do pedido</span><b id="mesa-total">${fmt(total)}</b></div>
+          <div style="display:${pago > 0 ? "flex" : "none"}; justify-content:space-between; padding:2px 0;" id="mesa-pago-row"><span class="hint" style="margin:0;">Já pago</span><b id="mesa-pago" style="color:#2F8F5B;">${fmt(pago)}</b></div>
+          <div style="display:flex; justify-content:space-between; padding:2px 0;"><span class="hint" style="margin:0;">Saldo pendente</span><b id="mesa-saldo" style="font-family:var(--serif); font-size:19px; color:${saldo > 0 ? "var(--danger)" : "#2F8F5B"};">${fmt(saldo)}</b></div>
+        </div>
+        ${(order.pagamentos || []).length ? `<div class="hint" style="margin:8px 0 0;">Pagamentos: ${order.pagamentos.map((p) => `${fmt(p.valor)} (${esc(p.metodo)})`).join(" · ")}</div>` : ""}
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
           <button class="btn btn-ghost" style="flex:1;" onclick="imprimirProformaMesa('${order.id}')">Fatura Proforma</button>
-          <button class="btn btn-accent" style="flex:1;" onclick="openPagamentoMesaModal('${order.id}')">Cobrar / Finalizar</button>
+          <button class="btn btn-accent" style="flex:1;" onclick="openPagamentoMesaModal('${order.id}')">${pago > 0 ? "Registar novo pagamento" : "Cobrar / Registar pagamento"}</button>
         </div>
         <p class="hint">Aberto por ${esc(order.operador)} · ${new Date(order.abertaEm).toLocaleString("pt-PT")}</p>
       </div>
@@ -1249,9 +1296,9 @@ function renderMesaGrid() {
   const term = (mesaSearch || "").toLowerCase();
   const filtered = DB.products.filter((p) => p.nome.toLowerCase().includes(term));
   grid.innerHTML = filtered.map((p) => `
-    <button class="product-tile" ${p.qtd <= 0 ? "disabled" : ""} onclick="addItemMesa('${p.id}')">
+    <button class="product-tile" ${p.qtdRestaurante <= 0 ? "disabled" : ""} onclick="addItemMesa('${p.id}')">
       <div style="font-weight:600; font-size:13px;">${esc(p.nome)}</div>
-      <div class="hint" style="margin:2px 0;">${esc(p.categoria)} · stock ${p.qtd}</div>
+      <div class="hint" style="margin:2px 0;">${esc(p.categoria)} · stock ${p.qtdRestaurante}</div>
       <div style="color:var(--teal); font-weight:700; font-size:13px;">${fmt(p.precoVenda)}</div>
     </button>`).join("") || '<div class="empty-state">Nenhum produto encontrado.</div>';
 }
@@ -1262,6 +1309,7 @@ function addItemMesa(produtoId) {
   if (item) item.qtd += 1; else order.itens.push({ id: p.id, nome: p.nome, preco: p.precoVenda, qtd: 1 });
   saveCollection("tableOrders");
   renderMesaCart();
+  refreshMesaTotais();
 }
 function changeItemQtdMesa(produtoId, delta) {
   const order = getActiveMesaOrder(); if (!order) return;
@@ -1269,12 +1317,22 @@ function changeItemQtdMesa(produtoId, delta) {
   item.qtd = Math.max(1, item.qtd + delta);
   saveCollection("tableOrders");
   renderMesaCart();
+  refreshMesaTotais();
 }
 function removeItemMesa(produtoId) {
   const order = getActiveMesaOrder(); if (!order) return;
   order.itens = order.itens.filter((i) => i.id !== produtoId);
   saveCollection("tableOrders");
   renderMesaCart();
+  refreshMesaTotais();
+}
+function refreshMesaTotais() {
+  const order = getActiveMesaOrder(); if (!order) return;
+  const total = calcTotalPedido(order); const pago = calcTotalPago(order); const saldo = calcSaldoPendente(order);
+  const totalEl = document.getElementById("mesa-total"); if (totalEl) totalEl.textContent = fmt(total);
+  const pagoRow = document.getElementById("mesa-pago-row"); if (pagoRow) pagoRow.style.display = pago > 0 ? "flex" : "none";
+  const pagoEl = document.getElementById("mesa-pago"); if (pagoEl) pagoEl.textContent = fmt(pago);
+  const saldoEl = document.getElementById("mesa-saldo"); if (saldoEl) { saldoEl.textContent = fmt(saldo); saldoEl.style.color = saldo > 0 ? "var(--danger)" : "#2F8F5B"; }
 }
 function renderMesaCart() {
   const order = getActiveMesaOrder(); if (!order) return;
@@ -1292,7 +1350,12 @@ function openNovaMesaModal() { document.getElementById("nm-nome").value = ""; op
 function criarNovaMesa() {
   const nome = document.getElementById("nm-nome").value.trim();
   if (!nome) { showToast("Indique a identificação da mesa/cliente."); return; }
-  const order = { id: genId(), nome, itens: [], status: "aberta", abertaEm: Date.now(), operador: currentUser ? currentUser.nome : "—" };
+  const openSession = getOpenSession();
+  if (openSession) {
+    const jaFechadaNestaSessao = DB.tableOrders.some((o) => o.status === "paga" && o.sessionId === openSession.id && o.nome.trim().toLowerCase() === nome.toLowerCase());
+    if (jaFechadaNestaSessao) { showToast(`"${nome}" já foi fechada nesta sessão de caixa. Use outro nome/número ou aguarde o próximo turno.`); return; }
+  }
+  const order = { id: genId(), nome, itens: [], status: "aberta", abertaEm: Date.now(), operador: currentUser ? currentUser.nome : "—", pagamentos: [] };
   DB.tableOrders.push(order);
   saveCollection("tableOrders");
   closeModal("modal-nova-mesa");
@@ -1312,11 +1375,15 @@ function openPagamentoMesaModal(orderId) {
   const order = DB.tableOrders.find((o) => o.id === orderId); if (!order) return;
   if (order.itens.length === 0) { showToast("Este pedido ainda não tem itens."); return; }
   if (!getOpenSession()) { showToast("Abra o caixa antes de cobrar pedidos."); return; }
-  const total = order.itens.reduce((a, i) => a + i.preco * i.qtd, 0);
-  document.getElementById("mp-resumo").innerHTML = `<div style="display:flex; justify-content:space-between;"><span>${esc(order.nome)}</span><b>${fmt(total)}</b></div><div class="hint">${order.itens.length} item(ns) neste pedido</div>`;
+  const total = calcTotalPedido(order); const pago = calcTotalPago(order); const saldo = calcSaldoPendente(order);
+  document.getElementById("mp-resumo").innerHTML = `<div style="display:flex; justify-content:space-between;"><span>${esc(order.nome)}</span><b>${fmt(total)}</b></div>
+    ${pago > 0 ? `<div style="display:flex; justify-content:space-between;"><span class="hint" style="margin:0;">Já pago</span><span>${fmt(pago)}</span></div>` : ""}
+    <div style="display:flex; justify-content:space-between;"><span class="hint" style="margin:0;">Saldo pendente</span><b style="color:var(--danger);">${fmt(saldo)}</b></div>`;
   document.getElementById("mp-metodo").innerHTML = METODOS_PAGAMENTO.map((m) => `<option>${m}</option>`).join("");
-  document.getElementById("mp-cliente-nome").value = "";
-  document.getElementById("mp-cliente-nuit").value = "";
+  document.getElementById("mp-valor").value = saldo.toFixed(2);
+  document.getElementById("mp-valor").max = saldo;
+  document.getElementById("mp-cliente-nome").value = (order.clienteFatura && order.clienteFatura.nome) || "";
+  document.getElementById("mp-cliente-nuit").value = (order.clienteFatura && order.clienteFatura.nuit) || "";
   document.getElementById("modal-mesa-pagamento").dataset.orderId = orderId;
   openModal("modal-mesa-pagamento");
 }
@@ -1327,29 +1394,52 @@ function confirmarPagamentoMesa() {
   const metodo = document.getElementById("mp-metodo").value;
   const clienteNome = document.getElementById("mp-cliente-nome").value.trim();
   const clienteNuit = document.getElementById("mp-cliente-nuit").value.trim();
-  const total = order.itens.reduce((a, i) => a + i.preco * i.qtd, 0);
-  const nomeParaFatura = clienteNome || order.nome;
-  const venda = { id: genId(), sessionId: openSession.id, data: todayISO(), hora: nowTime(), mesa: order.nome, clienteNome: clienteNome || null, clienteNuit: clienteNuit || null, metodo, itens: order.itens, total, operador: currentUser.nome, origem: "mesa" };
-  DB.sales.push(venda);
-  order.itens.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtd = Math.max(0, p.qtd - item.qtd); });
-  order.status = "paga";
-  order.pagaEm = Date.now();
-  order.metodoPagamento = metodo;
-  order.saleId = venda.id;
-  order.clienteFatura = (clienteNome || clienteNuit) ? { nome: clienteNome, nuit: clienteNuit } : null;
-  order.numeroFatura = proximoNumeroDocumento("fatura");
-  saveCollection("sales");
-  saveCollection("products");
-  saveCollection("tableOrders");
-  closeModal("modal-mesa-pagamento");
-  mesaActiveOrderId = null;
-  renderMesas();
-  showToast("Pagamento registado. Caixa e faturamento atualizados.");
-  imprimirDocumento("fatura", { nome: nomeParaFatura, nuit: clienteNuit || null, itens: order.itens, total, metodo, numero: order.numeroFatura });
+  if (clienteNome || clienteNuit) order.clienteFatura = { nome: clienteNome, nuit: clienteNuit };
+  const saldoAntes = calcSaldoPendente(order);
+  let valor = parseFloat(document.getElementById("mp-valor").value);
+  if (!valor || valor <= 0) { showToast("Indique um valor válido."); return; }
+  if (valor > saldoAntes + 0.005) { valor = saldoAntes; showToast("Valor ajustado para o saldo pendente."); }
+
+  if (!order.pagamentos) order.pagamentos = [];
+  const numeroRecibo = proximoNumeroDocumento("recibo");
+  order.pagamentos.push({ id: genId(), valor, metodo, data: todayISO(), hora: nowTime(), numeroRecibo, operador: currentUser.nome });
+  const saldoDepois = calcSaldoPendente(order);
+  const totalPedido = calcTotalPedido(order);
+  const nomeParaDocumento = clienteNome || order.nome;
+
+  if (saldoDepois <= 0.005) {
+    // Saldo liquidado: fecha a mesa, dá baixa no stock do restaurante (uma única vez) e emite a Fatura final.
+    order.itens.forEach((item) => { const p = DB.products.find((x) => x.id === item.id); if (p) p.qtdRestaurante = Math.max(0, p.qtdRestaurante - item.qtd); });
+    const metodosUsados = [...new Set(order.pagamentos.map((p) => p.metodo))];
+    const metodoFinal = metodosUsados.length > 1 ? "Misto" : metodosUsados[0];
+    const venda = { id: genId(), sessionId: openSession.id, data: todayISO(), hora: nowTime(), mesa: order.nome, clienteNome: clienteNome || null, clienteNuit: clienteNuit || null, metodo: metodoFinal, pagamentos: order.pagamentos.map((p) => ({ metodo: p.metodo, valor: p.valor })), itens: order.itens, total: totalPedido, operador: currentUser.nome, origem: "mesa" };
+    DB.sales.push(venda);
+    order.status = "paga";
+    order.pagaEm = Date.now();
+    order.sessionId = openSession.id;
+    order.metodoPagamento = metodoFinal;
+    order.saleId = venda.id;
+    order.numeroFatura = proximoNumeroDocumento("fatura");
+    saveCollection("sales");
+    saveCollection("products");
+    saveCollection("tableOrders");
+    closeModal("modal-mesa-pagamento");
+    mesaActiveOrderId = null;
+    renderMesas();
+    showToast("Pagamento final registado. Mesa fechada, caixa e faturamento atualizados.");
+    imprimirDocumento("fatura", { nome: nomeParaDocumento, nuit: clienteNuit || null, itens: order.itens, total: totalPedido, metodo: metodoFinal, numero: order.numeroFatura });
+  } else {
+    // Pagamento parcial: a mesa continua aberta, emite-se só o recibo desta parcela.
+    saveCollection("tableOrders");
+    closeModal("modal-mesa-pagamento");
+    renderMesas();
+    showToast(`Pagamento parcial registado. Saldo pendente: ${fmt(saldoDepois)}.`);
+    imprimirDocumento("recibo", { nome: nomeParaDocumento, nuit: clienteNuit || null, itens: [{ id: "pp", nome: `Pagamento parcial — saldo restante: ${fmt(saldoDepois)}`, preco: valor, qtd: 1 }], total: valor, metodo, numero: numeroRecibo });
+  }
 }
 function reimprimirDocumentoMesa(orderId, tipo) {
   const order = DB.tableOrders.find((o) => o.id === orderId); if (!order) return;
-  const total = order.itens.reduce((a, i) => a + i.preco * i.qtd, 0);
+  const total = calcTotalPedido(order);
   const nome = (order.clienteFatura && order.clienteFatura.nome) || order.nome;
   const nuit = order.clienteFatura && order.clienteFatura.nuit;
   let numero;
@@ -1362,26 +1452,84 @@ function reimprimirDocumentoMesa(orderId, tipo) {
 /* ==================================================================
    STOCK
 ================================================================== */
+let stockTab = "restaurante";
+function setStockTab(k) { stockTab = k; renderStock(); }
 function renderStock() {
-  const tbody = document.getElementById("stock-tbody");
-  const emptyEl = document.getElementById("stock-empty");
-  if (DB.products.length === 0) { tbody.innerHTML = ""; emptyEl.innerHTML = '<div class="empty-state"><div class="ic">&#128230;</div>Nenhum produto registado.</div>'; return; }
-  emptyEl.innerHTML = "";
-  tbody.innerHTML = DB.products.map((p) => `
-    <tr>
+  const el = document.getElementById("stock-content"); if (!el) return;
+  const tabs = [["restaurante", "Stock do Restaurante"], ["armazem", "Stock Geral (Armazém)"]];
+  el.innerHTML = `<div class="tabbar">${tabs.map(([k, l]) => `<button class="tabbtn ${stockTab === k ? "active" : ""}" onclick="setStockTab('${k}')">${l}</button>`).join("")}</div><div id="stock-sub"></div>`;
+  const sub = document.getElementById("stock-sub");
+  if (stockTab === "armazem") renderStockArmazem(sub); else renderStockRestaurante(sub);
+}
+function renderStockRestaurante(el) {
+  if (DB.products.length === 0) { el.innerHTML = '<div class="card card-pad"><div class="empty-state"><div class="ic">&#128230;</div>Nenhum produto registado.</div></div>'; return; }
+  el.innerHTML = `<div class="card card-pad"><div class="table-wrap"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Stock restaurante</th><th>Preço custo</th><th>Preço venda</th><th></th></tr></thead><tbody>
+    ${DB.products.map((p) => `<tr>
       <td>${esc(p.nome)}</td>
       <td><span class="badge b-navy">${esc(p.categoria)}</span></td>
-      <td><div class="qty-ctrl"><button onclick="ajustarStockQtd('${p.id}',-1)">−</button><span style="${p.qtd <= p.minimo ? "color:var(--danger); font-weight:700;" : ""}">${p.qtd}</span><button onclick="ajustarStockQtd('${p.id}',1)">+</button><span class="hint" style="margin:0;">${esc(p.unidade)}</span></div></td>
+      <td><div class="qty-ctrl"><button onclick="ajustarStockQtd('${p.id}',-1)">−</button><span style="${p.qtdRestaurante <= p.minimo ? "color:var(--danger); font-weight:700;" : ""}">${p.qtdRestaurante}</span><button onclick="ajustarStockQtd('${p.id}',1)">+</button><span class="hint" style="margin:0;">${esc(p.unidade)}</span></div></td>
       <td>${fmt(p.precoCusto)}</td>
       <td>${fmt(p.precoVenda)}</td>
       <td style="text-align:right; white-space:nowrap;"><button class="icon-btn" onclick="editProduto('${p.id}')">&#9998;</button><button class="icon-btn" onclick="deleteProduto('${p.id}')">&#128465;</button></td>
-    </tr>`).join("");
+    </tr>`).join("")}
+  </tbody></table></div></div>`;
+}
+function renderStockArmazem(el) {
+  if (DB.products.length === 0) { el.innerHTML = '<div class="card card-pad"><div class="empty-state"><div class="ic">&#128176;</div>Nenhum produto registado.</div></div>'; return; }
+  el.innerHTML = `<div class="card card-pad"><p class="hint" style="margin-top:0;">O stock do armazém é onde entram as compras/receção de mercadoria. Ao abastecer o restaurante, a quantidade sai daqui e entra automaticamente no stock do restaurante.</p>
+    <div class="table-wrap"><table><thead><tr><th>Produto</th><th>Categoria</th><th>Stock armazém</th><th></th></tr></thead><tbody>
+    ${DB.products.map((p) => `<tr>
+      <td>${esc(p.nome)}</td>
+      <td><span class="badge b-navy">${esc(p.categoria)}</span></td>
+      <td>${p.qtdArmazem} ${esc(p.unidade)}</td>
+      <td style="text-align:right; white-space:nowrap;"><button class="btn btn-ghost" onclick="openEntradaArmazemModal('${p.id}')">+ Entrada</button> <button class="btn btn-accent" onclick="openAbastecerModal('${p.id}')" ${p.qtdArmazem <= 0 ? "disabled" : ""}>Abastecer restaurante &rarr;</button></td>
+    </tr>`).join("")}
+    </tbody></table></div></div>`;
 }
 function ajustarStockQtd(id, delta) {
   const p = DB.products.find((x) => x.id === id); if (!p) return;
-  p.qtd = Math.max(0, p.qtd + delta);
+  p.qtdRestaurante = Math.max(0, p.qtdRestaurante + delta);
   saveCollection("products");
   renderStock();
+}
+function openEntradaArmazemModal(id) {
+  document.getElementById("ea-produto-id").value = id;
+  const p = DB.products.find((x) => x.id === id);
+  document.getElementById("ea-produto-nome").textContent = p ? p.nome : "";
+  document.getElementById("ea-qtd").value = "";
+  openModal("modal-entrada-armazem");
+}
+function confirmarEntradaArmazem() {
+  const id = document.getElementById("ea-produto-id").value;
+  const p = DB.products.find((x) => x.id === id); if (!p) return;
+  const qtd = parseFloat(document.getElementById("ea-qtd").value);
+  if (!qtd || qtd <= 0) { showToast("Indique uma quantidade válida."); return; }
+  p.qtdArmazem += qtd;
+  saveCollection("products");
+  closeModal("modal-entrada-armazem");
+  renderStock();
+  showToast(`Entrada registada: +${qtd} ${p.unidade} no armazém.`);
+}
+function openAbastecerModal(id) {
+  const p = DB.products.find((x) => x.id === id); if (!p) return;
+  document.getElementById("ab-produto-id").value = id;
+  document.getElementById("ab-produto-nome").textContent = `${p.nome} — disponível no armazém: ${p.qtdArmazem} ${p.unidade}`;
+  document.getElementById("ab-qtd").value = "";
+  document.getElementById("ab-qtd").max = p.qtdArmazem;
+  openModal("modal-abastecer");
+}
+function confirmarAbastecer() {
+  const id = document.getElementById("ab-produto-id").value;
+  const p = DB.products.find((x) => x.id === id); if (!p) return;
+  const qtd = parseFloat(document.getElementById("ab-qtd").value);
+  if (!qtd || qtd <= 0) { showToast("Indique uma quantidade válida."); return; }
+  if (qtd > p.qtdArmazem) { showToast("Não há essa quantidade disponível no armazém."); return; }
+  p.qtdArmazem -= qtd;
+  p.qtdRestaurante += qtd;
+  saveCollection("products");
+  closeModal("modal-abastecer");
+  renderStock();
+  showToast(`${qtd} ${p.unidade} de "${p.nome}" transferido(s) para o restaurante.`);
 }
 function openProdutoModal() {
   document.getElementById("produto-modal-title").textContent = "Novo produto";
@@ -1389,7 +1537,8 @@ function openProdutoModal() {
   document.getElementById("pr-nome").value = "";
   document.getElementById("pr-categoria").value = "Bebidas";
   document.getElementById("pr-unidade").value = "un";
-  document.getElementById("pr-qtd").value = "";
+  document.getElementById("pr-qtd-armazem").value = "0";
+  document.getElementById("pr-qtd-restaurante").value = "0";
   document.getElementById("pr-minimo").value = "";
   document.getElementById("pr-custo").value = "";
   document.getElementById("pr-venda").value = "";
@@ -1402,7 +1551,8 @@ function editProduto(id) {
   document.getElementById("pr-nome").value = p.nome;
   document.getElementById("pr-categoria").value = p.categoria;
   document.getElementById("pr-unidade").value = p.unidade;
-  document.getElementById("pr-qtd").value = p.qtd;
+  document.getElementById("pr-qtd-armazem").value = p.qtdArmazem;
+  document.getElementById("pr-qtd-restaurante").value = p.qtdRestaurante;
   document.getElementById("pr-minimo").value = p.minimo;
   document.getElementById("pr-custo").value = p.precoCusto;
   document.getElementById("pr-venda").value = p.precoVenda;
@@ -1414,7 +1564,8 @@ function saveProduto() {
     nome: document.getElementById("pr-nome").value.trim(),
     categoria: document.getElementById("pr-categoria").value,
     unidade: document.getElementById("pr-unidade").value.trim() || "un",
-    qtd: parseFloat(document.getElementById("pr-qtd").value) || 0,
+    qtdArmazem: parseFloat(document.getElementById("pr-qtd-armazem").value) || 0,
+    qtdRestaurante: parseFloat(document.getElementById("pr-qtd-restaurante").value) || 0,
     minimo: parseFloat(document.getElementById("pr-minimo").value) || 0,
     precoCusto: parseFloat(document.getElementById("pr-custo").value) || 0,
     precoVenda: parseFloat(document.getElementById("pr-venda").value) || 0,
@@ -1609,8 +1760,8 @@ function renderRelatorios() {
       ${despesas.slice().reverse().map((e) => `<tr><td>${new Date(e.data).toLocaleDateString("pt-PT")}</td><td>${esc(e.categoria)}</td><td>${esc(e.descricao)||"—"}</td><td style="text-align:right">${fmt(e.valor)}</td></tr>`).join("")}
       </tbody></table></div>`;
   } else {
-    wrap.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Produto</th><th>Qtd</th><th>Valor em stock</th></tr></thead><tbody>
-      ${DB.products.map((p) => `<tr><td>${esc(p.nome)}</td><td>${p.qtd} ${esc(p.unidade)}</td><td>${fmt(p.qtd*p.precoCusto)}</td></tr>`).join("")}
+    wrap.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Produto</th><th>Armazém</th><th>Restaurante</th><th>Valor em stock (total)</th></tr></thead><tbody>
+      ${DB.products.map((p) => `<tr><td>${esc(p.nome)}</td><td>${p.qtdArmazem} ${esc(p.unidade)}</td><td>${p.qtdRestaurante} ${esc(p.unidade)}</td><td>${fmt((p.qtdArmazem+p.qtdRestaurante)*p.precoCusto)}</td></tr>`).join("")}
       </tbody></table></div>`;
   }
 }
@@ -1640,10 +1791,11 @@ function renderFuncSub() {
 function renderFuncCadastro(el) {
   el.innerHTML = `<div class="card card-pad">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><h3 style="font-family:var(--serif); margin:0;">Quadro de funcionários</h3><button class="btn btn-accent" onclick="openFuncionarioModal()">+ Novo funcionário</button></div>
-    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Admissão</th><th>Salário base</th><th></th></tr></thead><tbody>
-    ${DB.employees.map((e) => `<tr><td>${esc(e.nome)}</td><td>${esc(e.cargo)}</td><td>${new Date(e.dataAdmissao).toLocaleDateString("pt-PT")}</td><td>${fmt(e.salarioBase)}</td>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Admissão</th><th>Salário base</th><th>Adiantamento</th><th></th></tr></thead><tbody>
+    ${DB.employees.map((e) => `<tr><td>${esc(e.nome)}</td><td>${esc(e.cargo)}</td><td>${new Date(e.dataAdmissao).toLocaleDateString("pt-PT")}</td><td>${fmt(e.salarioBase)}</td><td>${e.adiantamento > 0 ? `<span class="badge b-warn">${fmt(e.adiantamento)}</span>` : fmt(0)}</td>
       <td style="text-align:right; white-space:nowrap;"><button class="icon-btn" onclick="editFuncionario('${e.id}')">&#9998;</button><button class="icon-btn" onclick="deleteFuncionario('${e.id}')">&#128465;</button></td></tr>`).join("")}
     </tbody></table></div>
+    <p class="hint">O valor de adiantamento é descontado automaticamente do salário líquido na Folha Salarial do mês. Depois de processada a folha, edite aqui o funcionário e coloque o adiantamento a 0 se já tiver sido totalmente descontado.</p>
   </div>`;
 }
 function openFuncionarioModal() {
@@ -1652,6 +1804,7 @@ function openFuncionarioModal() {
   document.getElementById("fn-nome").value = "";
   document.getElementById("fn-cargo").value = "";
   document.getElementById("fn-salario").value = "";
+  document.getElementById("fn-adiantamento").value = "0";
   document.getElementById("fn-admissao").value = todayISO();
   openModal("modal-funcionario");
 }
@@ -1662,6 +1815,7 @@ function editFuncionario(id) {
   document.getElementById("fn-nome").value = e.nome;
   document.getElementById("fn-cargo").value = e.cargo;
   document.getElementById("fn-salario").value = e.salarioBase;
+  document.getElementById("fn-adiantamento").value = e.adiantamento || 0;
   document.getElementById("fn-admissao").value = e.dataAdmissao;
   openModal("modal-funcionario");
 }
@@ -1671,6 +1825,7 @@ function saveFuncionario() {
     nome: document.getElementById("fn-nome").value.trim(),
     cargo: document.getElementById("fn-cargo").value.trim(),
     salarioBase: parseFloat(document.getElementById("fn-salario").value) || 0,
+    adiantamento: parseFloat(document.getElementById("fn-adiantamento").value) || 0,
     dataAdmissao: document.getElementById("fn-admissao").value || todayISO(),
   };
   if (!payload.nome) { showToast("Indique o nome do funcionário."); return; }
@@ -1705,7 +1860,7 @@ function renderAssiduidade(el) {
         <div><b>${esc(emp.nome)}</b><div class="hint" style="margin:0;">${esc(emp.cargo)}</div></div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           ${rec ? `<span class="badge ${toneMap[rec.status]}">${rec.status}</span>` : ""}
-          ${rec && rec.checkIn ? `<span class="hint" style="margin:0;">&#9200; ${rec.checkIn}${rec.checkOut ? " – " + rec.checkOut : ""}</span>` : ""}
+          ${rec && (rec.status === "Presente" || rec.status === "Atraso") ? `<span class="hint" style="margin:0; display:flex; align-items:center; gap:4px;">&#9200; Entrada <input type="time" value="${rec.checkIn || ""}" style="width:auto; padding:4px 6px; font-size:12px;" onchange="editCheckIn('${emp.id}', this.value)"></span>${rec.checkOut ? `<span class="hint" style="margin:0;">Saída: ${rec.checkOut}</span>` : ""}` : ""}
           <select style="width:auto; padding:6px 8px; font-size:12px;" onchange="setAssiduidade('${emp.id}', this.value)">
             <option value="" ${!rec ? "selected" : ""} disabled>Marcar…</option>
             ${statusOptions.map((s) => `<option ${rec && rec.status===s ? "selected" : ""}>${s}</option>`).join("")}
@@ -1726,6 +1881,14 @@ function setAssiduidade(empId, status) {
   else { DB.attendance.push({ id: genId(), employeeId: empId, date: assiduidadeData, status, checkIn, checkOut: null }); }
   saveCollection("attendance");
   renderFuncSub();
+}
+function editCheckIn(empId, novoHorario) {
+  const rec = DB.attendance.find((a) => a.employeeId === empId && a.date === assiduidadeData);
+  if (!rec) return;
+  rec.checkIn = novoHorario;
+  saveCollection("attendance");
+  renderFuncSub();
+  showToast("Horário de entrada atualizado.");
 }
 function setCheckOut(empId) {
   const rec = DB.attendance.find((a) => a.employeeId === empId && a.date === assiduidadeData);
@@ -1754,8 +1917,9 @@ function renderFolhaSalarial(el) {
     const descontoFaltas = valorDia * faltas;
     const salarioBruto = Math.max(0, emp.salarioBase - descontoFaltas);
     const inss = salarioBruto * 0.03;
-    const salarioLiquido = salarioBruto - inss;
-    return { empId: emp.id, nome: emp.nome, cargo: emp.cargo, diasTrabalhados, faltas, salarioBase: emp.salarioBase, descontoFaltas, salarioBruto, inss, salarioLiquido, ajustadoManualmente: false };
+    const adiantamento = emp.adiantamento || 0;
+    const salarioLiquido = Math.max(0, salarioBruto - inss - adiantamento);
+    return { empId: emp.id, nome: emp.nome, cargo: emp.cargo, diasTrabalhados, faltas, salarioBase: emp.salarioBase, descontoFaltas, salarioBruto, inss, adiantamento, salarioLiquido, ajustadoManualmente: false };
   });
   const existingRun = DB.payrollRuns.find((r) => r.mesAno === mesAno);
   // Enquanto a folha não estiver gerada, mostra a pré-visualização calculada a partir da assiduidade.
@@ -1771,15 +1935,15 @@ function renderFolhaSalarial(el) {
       <div class="field"><label>Ano</label><input type="number" value="${folhaAno}" onchange="folhaAno=parseInt(this.value)||${new Date().getFullYear()}; renderFuncSub();"></div>
     </div>
     <p class="hint">Dias úteis considerados: <b>${diasUteis}</b> (Seg–Sáb)${existingRun ? ` · Folha ${existingRun.pago ? "paga" : "pendente"}` : " · pré-visualização (ainda não gerada)"}</p>
-    <div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Dias trab.</th><th>Faltas</th><th>Salário base</th><th>Desc. faltas</th><th>INSS (3%)</th><th style="text-align:right">Líquido a pagar</th></tr></thead><tbody>
-    ${calc.map((c) => `<tr><td>${esc(c.nome)}<div class="hint" style="margin:0;">${esc(c.cargo)}</div></td><td>${c.diasTrabalhados}</td><td>${c.faltas}</td><td>${fmt(c.salarioBase)}</td><td>-${fmt(c.descontoFaltas)}</td><td>-${fmt(c.inss)}</td>
+    <div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Dias trab.</th><th>Faltas</th><th>Salário base</th><th>Desc. faltas</th><th>INSS (3%)</th><th>Adiantamento</th><th style="text-align:right">Líquido a pagar</th></tr></thead><tbody>
+    ${calc.map((c) => `<tr><td>${esc(c.nome)}<div class="hint" style="margin:0;">${esc(c.cargo)}</div></td><td>${c.diasTrabalhados}</td><td>${c.faltas}</td><td>${fmt(c.salarioBase)}</td><td>-${fmt(c.descontoFaltas)}</td><td>-${fmt(c.inss)}</td><td>${c.adiantamento > 0 ? "-" + fmt(c.adiantamento) : fmt(0)}</td>
       <td style="text-align:right; font-weight:700;">
         ${podeEditar
           ? `<input type="number" step="0.01" value="${c.salarioLiquido.toFixed(2)}" style="width:110px; text-align:right; padding:5px 6px; font-weight:700;" onchange="editFolhaLiquido('${mesAno}','${c.empId}', this.value)">`
           : fmt(c.salarioLiquido)}
         ${c.ajustadoManualmente ? ' <span class="hint" title="Valor ajustado manualmente" style="margin:0;">&#9998;</span>' : ""}
       </td></tr>`).join("")}
-    </tbody><tfoot><tr style="font-weight:700;"><td colspan="6">Total da folha</td><td style="text-align:right;">${fmt(totalLiquido)}</td></tr></tfoot></table></div>
+    </tbody><tfoot><tr style="font-weight:700;"><td colspan="7">Total da folha</td><td style="text-align:right;">${fmt(totalLiquido)}</td></tr></tfoot></table></div>
     <p class="hint">* Cálculo simplificado: desconto proporcional por falta injustificada + INSS (3% do funcionário). Não inclui IRPS — consulte um contabilista para o processamento oficial.${podeEditar ? " Enquanto a folha estiver pendente, o líquido a pagar de cada funcionário pode ser corrigido diretamente na tabela." : ""}</p>
     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
       ${!existingRun || !existingRun.pago ? `<button class="btn btn-accent" onclick="gerarFolha('${mesAno}')">${existingRun ? "Recalcular a partir da assiduidade" : "Gerar folha do mês"}</button>` : ""}
@@ -1873,7 +2037,7 @@ function imprimirFolhaSalarial(mesAno) {
   const run = DB.payrollRuns.find((r) => r.mesAno === mesAno); if (!run) { showToast("Gere a folha antes de imprimir."); return; }
   const win = window.open("", "_blank", "width=760,height=700");
   if (!win) { showToast("Ative os pop-ups do navegador para imprimir a folha."); return; }
-  const linhas = run.itens.map((c) => `<tr><td>${esc(c.nome)}</td><td>${esc(c.cargo)}</td><td style="text-align:center;">${c.diasTrabalhados}</td><td style="text-align:center;">${c.faltas}</td><td style="text-align:right;">${fmt(c.salarioBase)}</td><td style="text-align:right;">-${fmt(c.descontoFaltas)}</td><td style="text-align:right;">-${fmt(c.inss)}</td><td style="text-align:right; font-weight:700;">${fmt(c.salarioLiquido)}</td></tr>`).join("");
+  const linhas = run.itens.map((c) => `<tr><td>${esc(c.nome)}</td><td>${esc(c.cargo)}</td><td style="text-align:center;">${c.diasTrabalhados}</td><td style="text-align:center;">${c.faltas}</td><td style="text-align:right;">${fmt(c.salarioBase)}</td><td style="text-align:right;">-${fmt(c.descontoFaltas)}</td><td style="text-align:right;">-${fmt(c.inss)}</td><td style="text-align:right;">${c.adiantamento > 0 ? "-" + fmt(c.adiantamento) : fmt(0)}</td><td style="text-align:right; font-weight:700;">${fmt(c.salarioLiquido)}</td></tr>`).join("");
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Folha de Salário ${mesAno}</title>
     <style>
       body{ font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#111; padding:24px; max-width:760px; margin:0 auto; }
@@ -1900,9 +2064,9 @@ function imprimirFolhaSalarial(mesAno) {
     <hr>
     <div style="display:flex; justify-content:space-between; margin-top:10px;"><b>FOLHA DE SALÁRIO — ${mesAno}</b><span>${run.pago ? "PAGA em " + new Date(run.pagoEm).toLocaleDateString("pt-PT") + (run.metodoPagamento ? " · " + esc(run.metodoPagamento) : "") : "PENDENTE"}</span></div>
     <div class="muted">Emitida em: ${new Date().toLocaleString("pt-PT")}</div>
-    <table><thead><tr><th>Funcionário</th><th>Cargo</th><th style="text-align:center;">Dias trab.</th><th style="text-align:center;">Faltas</th><th style="text-align:right;">Salário base</th><th style="text-align:right;">Desc. faltas</th><th style="text-align:right;">INSS</th><th style="text-align:right;">Líquido</th></tr></thead>
+    <table><thead><tr><th>Funcionário</th><th>Cargo</th><th style="text-align:center;">Dias trab.</th><th style="text-align:center;">Faltas</th><th style="text-align:right;">Salário base</th><th style="text-align:right;">Desc. faltas</th><th style="text-align:right;">INSS</th><th style="text-align:right;">Adiantamento</th><th style="text-align:right;">Líquido</th></tr></thead>
     <tbody>${linhas}</tbody>
-    <tfoot><tr class="total-row"><td colspan="7">TOTAL DA FOLHA</td><td style="text-align:right;">${fmt(run.totalLiquido)}</td></tr></tfoot></table>
+    <tfoot><tr class="total-row"><td colspan="8">TOTAL DA FOLHA</td><td style="text-align:right;">${fmt(run.totalLiquido)}</td></tr></tfoot></table>
     <div class="assinaturas"><div>Elaborado por (Administração)</div><div>Recebido / Conferido</div></div>
     <div class="footer">* Cálculo simplificado: desconto proporcional por falta injustificada + INSS (3%). Não inclui IRPS — consulte um contabilista para o processamento oficial.</div>
     <script>window.onload = function(){ window.print(); };<\/script>
@@ -2031,8 +2195,32 @@ const RENDERERS = {
   relatorios: renderRelatorios, funcionarios: renderFuncionarios, utilizadores: renderUtilizadores,
 };
 
+/* ==================================================================
+   MIGRAÇÃO DE DADOS ANTIGOS (executa uma vez a cada arranque; não apaga nada)
+================================================================== */
+function migrarDadosAntigos() {
+  let mudouProdutos = false;
+  DB.products.forEach((p) => {
+    if (p.qtdRestaurante === undefined || p.qtdArmazem === undefined) {
+      // Produtos antigos só tinham um campo "qtd" único — passa a ser o stock do restaurante,
+      // e o armazém começa em 0 (o administrador vai fazendo entradas conforme for abastecendo).
+      p.qtdRestaurante = p.qtdRestaurante !== undefined ? p.qtdRestaurante : (p.qtd || 0);
+      p.qtdArmazem = p.qtdArmazem !== undefined ? p.qtdArmazem : 0;
+      mudouProdutos = true;
+    }
+  });
+  if (mudouProdutos) saveCollection("products");
+
+  let mudouFuncionarios = false;
+  DB.employees.forEach((e) => {
+    if (e.adiantamento === undefined) { e.adiantamento = 0; mudouFuncionarios = true; }
+  });
+  if (mudouFuncionarios) saveCollection("employees");
+}
+
 (async function boot() {
   await loadAll();
+  migrarDadosAntigos();
   document.getElementById("loading").style.display = "none";
   document.getElementById("login-overlay").style.display = "flex";
   updateSyncBadge();
