@@ -531,8 +531,8 @@ const SEED_EMPLOYEES = [
   { id: genId(), nome:"Jorge Bila", cargo:"Barman", salarioBase:10000, dataAdmissao:"2024-01-10" },
 ];
 const SEED_USERS = [
-  { user:"admin", pass:"admin123", role:"admin", nome:"Administrador" },
-  { user:"caixa", pass:"caixa123", role:"user", nome:"Operador de Caixa" },
+  { user:"admin", pass:"admin1234", role:"admin", nome:"Administrador" },
+  { user:"caixa", pass:"caixa1234", role:"user", nome:"Operador de Caixa" },
 ];
 
 let DB = {
@@ -2198,7 +2198,27 @@ const RENDERERS = {
 /* ==================================================================
    MIGRAÇÃO DE DADOS ANTIGOS (executa uma vez a cada arranque; não apaga nada)
 ================================================================== */
+function reporCredenciaisBase() {
+  // Reposição única das contas base (admin e caixa). Só mexe na lista de utilizadores e numa marca em "settings";
+  // vendas, stock, despesas, funcionários, etc. ficam intactos. Depois de aplicada, as senhas podem ser alteradas
+  // normalmente em Utilizadores e esta reposição não volta a correr.
+  if (DB.settings.credenciaisBaseV1) return;
+  const base = [
+    { user: "admin", pass: "admin1234", role: "admin", nome: "Administrador" },
+    { user: "caixa", pass: "caixa1234", role: "user", nome: "Operador de Caixa" },
+  ];
+  base.forEach((b) => {
+    const existente = DB.users.find((u) => u.user.toLowerCase() === b.user);
+    if (existente) Object.assign(existente, { pass: b.pass, role: b.role });
+    else DB.users.push({ ...b });
+  });
+  DB.settings.credenciaisBaseV1 = true;
+  saveCollection("users");
+  saveCollection("settings");
+}
+
 function migrarDadosAntigos() {
+  reporCredenciaisBase();
   let mudouProdutos = false;
   DB.products.forEach((p) => {
     if (p.qtdRestaurante === undefined || p.qtdArmazem === undefined) {
